@@ -48,7 +48,12 @@ class BaseAgent():
 
         assert hasattr(self.config, "model")
 
-        self.model = models.ModelsProxy(getattr(self.config, "model"))
+        try:
+            self.model = models.ModelsProxy(getattr(self.config, "model"))
+        except Exception as e:
+            ulogger.error(f"Error in model creation: {e}")
+            from cpr.models import models_meta
+            self.model = models_meta.ModelsProxy(getattr(self.config, "model"))
 
         for name in cfg.updater_names():
             updater_cfg = cfg.updater_config(name)
