@@ -50,7 +50,7 @@ class ActorUpdater(actorupdater.ActorUpdater):
         Q_fb = self._calcute_q(state, action, z_policy)
 
         weight = Q_fb.abs().mean().detach() if self.config.scale_reg else 1.0
-        Q_disc_loss = -Q_disc * self.config.reg_coeff * weight
+        Q_disc_loss = -Q_disc.mean() * self.config.reg_coeff * weight
         Q_loss = - Q_fb
 
         # 如果支持对数概率且配置了熵正则化
@@ -63,7 +63,7 @@ class ActorUpdater(actorupdater.ActorUpdater):
             Q_loss += prob_loss
 
         # 策略损失：负的Q值均值（最大化Q值）
-        actor_loss = Q_loss.mean() + Q_disc_loss.mean()
+        actor_loss = Q_loss.mean() + Q_disc_loss
 
         with torch.no_grad():
             output_metrics = {

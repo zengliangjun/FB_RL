@@ -95,9 +95,9 @@ class BaseModelCalcute():
 
     @torch.no_grad()
     def act_inference(self, state: torch.Tensor, z_policy: torch.Tensor, *args, **kwargs):
-        state = self.state_prepose(state)
-        actor = self.actor(state, z_policy)
-        return actor_post.actor_post_process(self.config.net_actor, actor, actor_post.ActorValueType.MEAN)
+        if hasattr(self, "state_prepose") and self.state_prepose is not None:
+            state = self.state_prepose(state)
+        return self.act(state, z_policy, actor_post.ActorValueType.MEAN)
 
     def forward_representation(self, state: torch.Tensor, action: torch.Tensor, z_policy: torch.Tensor):
         return self.forward_map(state = state, action = action, z_policy = z_policy)  # batch x z_dim
