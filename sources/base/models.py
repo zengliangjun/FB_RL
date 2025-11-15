@@ -3,9 +3,11 @@ import torch.nn as nn
 from typing import List, Any
 import dataclasses
 from torch.nn import functional as F
+from safetensors.torch import load_model as safetensors_load_model
+import os.path as osp
 
 import math
-
+from loguru import logger as ulogger
 
 from utils import actor_post, utils
 from base import configs, networks
@@ -275,6 +277,15 @@ class BaseModel(nn.Module):
         for name in net_names:
             net: nn.Module = getattr(self, name)
             net.load_state_dict(collect_dict[name])
+
+    def resume(self, checkpoints_folder):
+        model_file = osp.join(checkpoints_folder, "model.safetensors")
+
+        ## model
+        if osp.exists(model_file):
+            safetensors_load_model(self, model_file, device=self.config.device)
+            self.init_target()
+            ulogger.info(f"resume model: {model_file}")
 
 
 

@@ -6,6 +6,20 @@ import json
 from pathlib import Path
 import yaml
 
+
+def config_update(target: Any, key: str, value: str):
+    target_fields = {field.name for field in dataclasses.fields(target)}
+    for field in target_fields:
+        if dataclasses.is_dataclass(getattr(target, field)):
+            config_update(getattr(target, field), key, value)
+    ## update
+    if key in target_fields:
+        setattr(target, key, value)
+
+
+
+
+
 class ConfigError(Exception):
     """配置系统基础异常"""
     pass
@@ -44,7 +58,7 @@ def dict_to_config(source: Dict[str, Any], target: Any):
 
 def instantiate_config(config: str) -> object:
     """Convert an object to a file path based on its module and class name."""
-    modules_name, class_name = config._target_.split(":")
+    modules_name, class_name = config["_config_class_name_"].split(":")
     modules = importlib.import_module(modules_name)
     assert hasattr(modules, class_name), f"Module {modules_name} has no attribute {class_name}"
 
@@ -144,12 +158,12 @@ class BaseConfig:
         '''
         target = cls()
         if data["_config_class_name_"] != objtostr(target):
-            target = instantiate_config(data["_config_class_name_"])
+            target = instantiate_config(data)
         dict_to_config(data, target)
         return target
 
     @classmethod
-    def from_json(cls: Type[T], json_str: str) -> T:
+    def from_json(cls: Type[T], json_str: Path) -> T:
         """从JSON字符串创建配置实例
 
         Args:
@@ -158,7 +172,8 @@ class BaseConfig:
         Returns:
             T: 配置实例
         """
-        data = json.loads(json_str)
+        with json_str.open() as fd:
+            data = json.load(fd)
         return cls.from_dict(data)
 
     @classmethod
@@ -190,8 +205,7 @@ class BaseConfig:
         file_path = Path(file_path)
 
         if file_path.suffix.lower() in ['.json']:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return cls.from_json(f.read())
+            return cls.from_json(file_path)
         elif file_path.suffix.lower() in ['.yaml', '.yml']:
             with open(file_path, 'r', encoding='utf-8') as f:
                 return cls.from_yaml(f.read())

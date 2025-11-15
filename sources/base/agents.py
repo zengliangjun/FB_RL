@@ -38,6 +38,27 @@ class AgentProxy():
         return cfg.instantiate_from_config()
 
 
+    @staticmethod
+    def resume_from_dir(model_folder: str, device: str | None = None):
+
+        jsonfile = osp.join(model_folder, "config.json")
+        model_file = osp.join(model_folder, "model.safetensors")
+
+        assert osp.exists(jsonfile)
+        assert osp.exists(model_file)
+
+
+        target = configs.BaseConfig.load(jsonfile)
+
+        configs.config_update(target, "resume_path", model_folder)
+        if device is not None:
+            configs.config_update(target, "device", device)
+
+        agent = AgentProxy(target)
+        return agent
+
+
+
 class BaseAgent():
 
     model: models.BaseModel
