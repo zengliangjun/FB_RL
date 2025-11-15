@@ -108,7 +108,8 @@ class FBTrainer(trainers.BaseTrainer):
         return self.config.one_step_update_iters
 
     def _train_eval(self, step):
-        setattr(self.agent.model.calcute, "seq_length", self.agent.config.seq_length)
+        if not hasattr(self.agent.model.calcute, "seq_length"):
+            setattr(self.agent.model.calcute, "seq_length", self.agent.config.seq_length)
 
         self.agent.model.eval()
 
