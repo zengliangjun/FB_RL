@@ -241,6 +241,7 @@ class FBUpdater(updaters.Updater):
 
         with torch.no_grad():
             items = {
+                "fb/reward": implicit_reward.mean().detach(),
                 "fb/target_Q": target_Q.mean().detach(),
                 "fb/Q": Q.mean().detach(),
                 "fb/q_loss": q_loss.detach()
