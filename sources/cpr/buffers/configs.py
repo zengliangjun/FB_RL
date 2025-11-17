@@ -26,8 +26,6 @@ class MotionBufferConfig(buffers.BaseBufferConfig):
     prioritization_max_val: float = 5
     prioritization_scale: float = 2
 
-
-
 @dataclasses.dataclass
 class DictBufferConfig(buffers.BaseBufferConfig):
     """
@@ -41,8 +39,6 @@ class DictBufferConfig(buffers.BaseBufferConfig):
     device: str = "cpu"
 
     capacity: int = 10000
-
-
 
 @dataclasses.dataclass
 class DMCBufferConfig(buffers.BaseBufferConfig):

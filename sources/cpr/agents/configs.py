@@ -34,3 +34,7 @@ class FBCPrAgentConfig(agents.BaseAgentConfig):
     relabel_ratio: float = 0.8
 
     seq_length: int = 8
+
+    def __post_init__(self):
+        super().__post_init__()
+        self._updater_names_ =  ["fb_updater", "actor_updater", "critic_updater", "discriminator_updater"]

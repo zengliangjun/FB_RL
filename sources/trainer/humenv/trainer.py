@@ -114,21 +114,21 @@ class FBTrainer(trainers.BaseTrainer):
         self.agent.model.eval()
 
         with torch.no_grad():
-            '''
-            reward_metrics = self.eval_reward.eval(model = self.agent.model.calcute,
+            if hasattr(self, "eval_reward") and self.eval_reward is not None:
+                reward_metrics = self.eval_reward.eval(model = self.agent.model.calcute,
                                 buffer = self.rollout_buffer,
                                 logger = self.logger,
                                 step = step)
-            '''
 
-            tracking_metrics = self.eval_tracking.eval(model = self.agent.model.calcute,
+            if hasattr(self, "eval_tracking") and self.eval_tracking is not None:
+                tracking_metrics = self.eval_tracking.eval(model = self.agent.model.calcute,
                                 logger = self.logger,
                                 step = step)
 
-            if self.expert_buffer.config.prioritization:
-                items = self.expert_buffer.priorities(tracking_metrics)
-                self.expert_buffer.update_priorities(items)
-                self.env.update_priorities(items)
+                if self.expert_buffer.config.prioritization:
+                    items = self.expert_buffer.priorities(tracking_metrics)
+                    self.expert_buffer.update_priorities(items)
+                    self.env.update_priorities(items)
 
         self.agent.model.train()
 

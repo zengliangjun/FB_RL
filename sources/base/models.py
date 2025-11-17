@@ -87,6 +87,12 @@ class BaseModelCalcute():
     def __init__(self, config: BaseModelConfig):
         self.config = config
 
+    def next_act(self, inputs: dict, type: actor_post.ActorValueType):
+        state = inputs["state"]
+        next_state = inputs["next_state"]
+        z_policy = inputs["z_policy"]
+        return self.act(state=next_state, z_policy=z_policy, type = type)
+
     def act(self, state: torch.Tensor, z_policy: torch.Tensor, type: actor_post.ActorValueType, *args, **kwargs):
         actor = self.actor(state, z_policy)
         return actor_post.actor_post_process(self.config.net_actor, actor, type)
@@ -100,6 +106,12 @@ class BaseModelCalcute():
         if hasattr(self, "state_prepose") and self.state_prepose is not None:
             state = self.state_prepose(state)
         return self.act(state, z_policy, actor_post.ActorValueType.MEAN)
+
+    def next_forward_representation(self, inputs: dict, action: torch.Tensor):
+        state = inputs["state"]
+        next_state = inputs["next_state"]
+        z_policy = inputs["z_policy"]
+        return self.forward_representation(next_state, action, z_policy)
 
     def forward_representation(self, state: torch.Tensor, action: torch.Tensor, z_policy: torch.Tensor):
         return self.forward_map(state = state, action = action, z_policy = z_policy)  # batch x z_dim

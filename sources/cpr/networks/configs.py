@@ -62,11 +62,11 @@ class SimpleCriticConfig(SimpleForwardMapConfig):
         self.out_dimension = 1
 
 @dataclasses.dataclass
-class ResidualCritic(ResidualForwardMapConfig):
+class ResidualCriticConfig(ResidualForwardMapConfig):
     _target_: str = "cpr.networks.residual:ResidualCritic"  # 目标类路径
 
     def __post_init__(self):
-        super(ResidualCritic, self).__post_init__()
+        super(ResidualCriticConfig, self).__post_init__()
         self.out_dimension = 1
 
 

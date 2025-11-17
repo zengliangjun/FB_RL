@@ -199,7 +199,9 @@ def initialize_storage(data: Dict, storage: Dict, capacity: int, device: Device)
                 s[k] = {}
                 recursive_initialize(v, s[k])
             else:
-                if len(v.shape) == 2:
+                if len(v.shape) == 3:
+                    size = (capacity, v.shape[1], v.shape[2])
+                elif len(v.shape) == 2:
                     size = (capacity, v.shape[1])
                 else:
                     size = (capacity)

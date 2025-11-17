@@ -41,10 +41,10 @@ class FBUpdater(updaters.Updater):
         next_state: torch.Tensor = inputs['next_state']  # 下一状态
         z_policy: torch.Tensor = inputs['z_policy']  # 技能向量
 
-        next_action = self.target_calcute.act(state = next_state, z_policy = z_policy, type = ActorValueType.SAMPLE, step = step)
+        next_action = self.target_calcute.next_act(inputs, type = ActorValueType.SAMPLE)
 
         # 使用目标网络计算下一状态的前向和后向表示
-        next_F = self.target_calcute.forward_representation(state = next_state, action = next_action, z_policy = z_policy)  # batch x z_dim
+        next_F = self.target_calcute.next_forward_representation(inputs, action = next_action)  # batch x z_dim
         next_B = self.target_calcute.backward_representation(state = next_state)  # batch x z_dim
 
         items = {}

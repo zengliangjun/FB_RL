@@ -1,41 +1,40 @@
 from base import updaters, models
-
-from cpr.updaters.cpr import configs
-from cpr.models import fb_cpr
+from isaac_fb.updaters import configs
+from isaac_fb.models import isaac
 from fbutils.actor_post import ActorValueType
 
 from typing import Dict, Union
+
 import torch
 from torch.nn import functional as F
 from torch.optim import Optimizer
 
 
-class CriticUpdater(updaters.Updater):
+class RewardCriticUpdater(updaters.Updater):
 
-    config: configs.CriticConfig
+    config: configs.RewardCriticConfig
 
-    calcute: fb_cpr.FBCprCalcute
-    target_calcute: fb_cpr.FBCprCalcute
+    calcute: isaac.IsaacCalcute
+    target_calcute: isaac.IsaacCalcute
 
-    critic_optim: Optimizer
+    optim: Optimizer
 
-    def __init__(self, cfg: configs.CriticConfig, model: models.BaseModel):
-        super(CriticUpdater, self).__init__(cfg, model)
+    def __init__(self, cfg: configs.RewardCriticConfig, model: models.BaseModel):
+        super(RewardCriticUpdater, self).__init__(cfg, model)
 
         self.calcute = model.calcute
         self.target_calcute = model.target_calcute
 
-        self.critic_optim = getattr(model, "critic_optim")
+        self.optim = getattr(model, "reward_critic_optim")
 
     @torch.no_grad()
     def _calcute_target_Q(self, inputs: dict, step: int) -> dict:
-
-        reward = self.target_calcute.discriminator_reward(state=inputs["state"], z_policy=inputs["z_policy"])
+        reward = inputs["reward"]
+        discount = inputs["discount"]
 
         next_action = self.target_calcute.next_act(inputs, type = ActorValueType.SAMPLE)
-        next_Qs = self.target_calcute.next_critic_calcute(inputs, action = next_action)  # num_parallel x batch x 1
+        next_Qs = self.target_calcute.next_reward_calcute(inputs, action = next_action)  # num_parallel x batch x 1
 
-        discount = inputs["discount"]
         if isinstance(next_Qs, Union[tuple, list]) and len(next_Qs) == 2:
             next_Qs = torch.min(*next_Qs)
             target_Q = reward + discount * next_Qs
@@ -49,14 +48,13 @@ class CriticUpdater(updaters.Updater):
                 target_Q = reward + discount * next_Qs
 
         return target_Q, {
-                "critic/target_Q": target_Q.mean().detach(),
-                "critic/disc_reward": reward.mean().detach()
+                "reward_critic/target_Q": target_Q.mean().detach()
             }
 
     def _calcute_loss(self, inputs: dict, step: int):
         target_Q, metrics = self._calcute_target_Q(inputs, step)
         # compute critic loss
-        Qs = self.calcute.critic_calcute(state=inputs["state"], action = inputs["action"], z_policy=inputs["z_policy"])  # num_parallel x batch x (1 or n_bins)
+        Qs = self.calcute.reward_calcute(state=inputs["state"], action = inputs["action"], z_policy=inputs["z_policy"])  # num_parallel x batch x (1 or n_bins)
 
         if isinstance(Qs, Union[tuple, list]) and len(Qs) == 2:
             critic_loss = 0.5 * sum(F.mse_loss(Qsi, target_Q) for Qsi in Qs)
@@ -70,8 +68,8 @@ class CriticUpdater(updaters.Updater):
 
         with torch.no_grad():
             output_metrics = {
-                "critic/critic_Q": Qs.mean().detach(),
-                "critic/loss": critic_loss.detach()
+                "reward_critic/critic_Q": Qs.mean().detach(),
+                "reward_critic/loss": critic_loss.detach()
             }
             output_metrics.update(metrics)
 
@@ -82,7 +80,7 @@ class CriticUpdater(updaters.Updater):
         loss, metrics = self._calcute_loss(batch, step)
 
         # 优化FB网络
-        self.critic_optim.zero_grad(set_to_none=True)
+        self.optim.zero_grad(set_to_none=True)
 
         loss.backward()
 
@@ -93,12 +91,12 @@ class CriticUpdater(updaters.Updater):
                 self.model.critic.parameters(), self.config.clip_grad_norm
             )
 
-        self.critic_optim.step()
+        self.optim.step()
 
         return metrics
 
     def save_dict(self, collect_dict: dict, prefix: str):
-        collect_dict[f"{prefix}_critic_optim"] = self.critic_optim.state_dict()
+        collect_dict[f"{prefix}_reward_critic_optim"] = self.optim.state_dict()
 
     def resume_dict(self, collect_dict: dict, prefix: str):
-        self.critic_optim.load_state_dict(collect_dict[f"{prefix}_critic_optim"])
+        self.optim.load_state_dict(collect_dict[f"{prefix}__reward_critic_optim"])

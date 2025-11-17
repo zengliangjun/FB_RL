@@ -37,6 +37,13 @@ class DiscriminatorUpdater(updaters.Updater):
         fake_obs: torch.Tensor,
         fake_z: torch.Tensor,
     ) -> torch.Tensor:
+
+        if hasattr(self.target_calcute, "discriminator_mergerstate"):
+            with torch.no_grad():
+                real_obs = self.target_calcute.discriminator_mergerstate(real_obs)
+                fake_obs = self.target_calcute.discriminator_mergerstate(fake_obs)
+
+
         batch_size = real_obs.shape[0]
         alpha = torch.rand(batch_size, 1, device=real_obs.device)
         interpolates = torch.cat(
