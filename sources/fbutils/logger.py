@@ -14,7 +14,7 @@ import torch
 import wandb
 from termcolor import colored
 from torch.utils.tensorboard import SummaryWriter
-from utils.hiplogs import HipLog
+from fbutils.hiplogs import HipLog
 
 
 Formating = tp.List[tp.Tuple[str, str, str]]

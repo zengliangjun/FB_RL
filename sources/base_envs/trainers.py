@@ -12,7 +12,7 @@ import time
 
 from base import agents, configs
 from base_envs import envs, buffers, evals
-from utils import logger
+from fbutils import logger
 
 
 @dataclasses.dataclass
@@ -110,6 +110,7 @@ class BaseTrainer:
         workdir = osp.join(os.getcwd(), "logs", self.config.name, f"run_{date}")
         os.makedirs(workdir)
         self.workdir = workdir
+        setattr(self.config.env_config, "workdir", workdir)
 
         ulogger.info(f"init_workdir: {workdir}.")
 

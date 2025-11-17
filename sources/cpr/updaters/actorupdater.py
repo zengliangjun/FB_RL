@@ -2,7 +2,7 @@ from base import updaters, models
 
 from cpr.updaters import configs
 from cpr.models import fb
-from utils.actor_post import ActorValueType
+from fbutils.actor_post import ActorValueType
 
 from typing import Dict, Union
 import torch

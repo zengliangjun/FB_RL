@@ -10,7 +10,7 @@ from torch.nn import functional as F
 import numpy as np
 
 from base import configs, networks, models
-from utils import actor_post, utils
+from fbutils import actor_post, utils
 
 metamotivo_dir = "/workspace/data2/VSCODE/MOTION/MATA/metamotivo"
 

@@ -1,6 +1,6 @@
 from base_envs import trainers
 from trainer.humenv import configs
-from utils.actor_post import ActorValueType
+from fbutils.actor_post import ActorValueType
 
 from cpr.models import fb
 from base_envs import buffers

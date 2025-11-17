@@ -1,7 +1,7 @@
 import torch
 from typing import Dict
 
-from utils.eval_mode import eval_mode
+from fbutils.eval_mode import eval_mode
 
 from base import agents
 from cpr.agents import configs
