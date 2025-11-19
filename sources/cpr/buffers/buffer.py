@@ -5,6 +5,7 @@ import torch
 from typing import Union, Mapping
 from pathlib import Path
 from loguru import logger as ulogger
+import os.path as osp
 
 from cpr.buffers import configs, org_buffer
 
@@ -141,6 +142,25 @@ class DictBuffer:
 
     def get_full_buffer(self):
         return self.buffer.get_full_buffer()
+
+    def save(self, full_path_name: str):
+        items = {
+            "capacity" : self.buffer.capacity,
+            "device": self.buffer.device,
+            "idx" : self.buffer._idx,
+            "is_full" : self.buffer._is_full,
+            "storage" : self.buffer.storage
+        }
+        torch.save(items, full_path_name)
+
+    def load(self, full_path_name: str):
+        items = torch.load(full_path_name)
+
+        self.buffer.capacity = items["capacity"]
+        self.buffer.device = items["device"]
+        self.buffer._idx = items["idx"]
+        self.buffer._is_full = items["is_full"]
+        self.buffer.storage = items["storage"]
 
 
 def load_data(dataset_path, expl_agent, domain_name, num_episodes=1):

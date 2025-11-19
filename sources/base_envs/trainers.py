@@ -132,6 +132,13 @@ class BaseTrainer:
 
         self.agent.save(self.workdir, step)
 
+        if step % (self.config.checkpoint_every_steps * 10) != 0 and step != self.config.max_steps - 1:
+            return
+
+        if hasattr(self, "rollout_buffer"):
+            full_path = osp.join(self.workdir, f"rollout_buffer_{step}.pth")
+            self.rollout_buffer.save(full_path)
+
     ##
     def _train_update_metrics(self, total_metrics, metrics):
         for k, v in metrics.items():
