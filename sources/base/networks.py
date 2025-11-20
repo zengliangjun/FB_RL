@@ -2,7 +2,7 @@ import torch.nn as nn
 import dataclasses
 from typing import Optional
 from base import configs
-
+from loguru import logger as ulogger
 
 @dataclasses.dataclass
 class BaseNetConfig(configs.BaseConfig):
@@ -54,8 +54,11 @@ class BConfig(BaseNetConfig):
     def __post_init__(self):
         super(BConfig, self).__post_init__()
         self.out_dimension = self.z_dimension
-
-        delattr(self, "action_dimension")
+        try:
+            delattr(self, "action_dimension")
+        except:
+            has = hasattr(self, "action_dimension")
+            ulogger.info(f"has attr action_dimension  :{has}")
 
 @dataclasses.dataclass
 class ActorConfig(BaseNetConfig):
@@ -89,4 +92,8 @@ class DiscriminatorConfig(BaseNetConfig):
     def __post_init__(self):
         super(DiscriminatorConfig, self).__post_init__()
         self.out_dimension = 1
-        delattr(self, "action_dimension")
+        try:
+            delattr(self, "action_dimension")
+        except:
+            has = hasattr(self, "action_dimension")
+            ulogger.info(f"has attr action_dimension  :{has}")

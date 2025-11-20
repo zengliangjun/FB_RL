@@ -9,6 +9,14 @@ gym.register(
     },
 )
 
+gym.register(
+    id="FB-G129dof128-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": "envs.isaac.env_configs.isaac_g1_cfg:IsaacEnvCfg128",
+    },
+)
 
 gym.register(
     id="FB-G129dof-Play-v0",

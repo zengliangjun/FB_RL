@@ -327,6 +327,13 @@ class IsaacEnvCfg(ManagerBasedRLEnvCfg):
         self.scene.robot = g1.G1_CYLINDER_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         self.actions.joint_pos.scale = g1.G1_ACTION_SCALE
 
+@configclass
+class IsaacEnvCfg128(IsaacEnvCfg):
+
+    def __post_init__(self):
+        super(IsaacEnvCfg128, self).__post_init__()
+        self.scene.num_envs = 128
+
 
 @configclass
 class IsaacEnvCfg_Play(IsaacEnvCfg):
