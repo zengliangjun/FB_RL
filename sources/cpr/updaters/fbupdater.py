@@ -209,21 +209,21 @@ class FBUpdater(updaters.Updater):
         fb_loss = fb_offdiag - fb_diag
 
         with torch.no_grad():
-            items = {
+            metrics = {
                     "fb/M_diag": fb_diag.detach(),
                     "fb/M_offdiag": fb_offdiag.detach(),
                     "fb/M_loss": fb_loss.detach()
                     }
 
-            items["fb/M_target"] = next_items['M'].detach().mean()
+            metrics["fb/M_target"] = next_items['M'].detach().mean()
             if isinstance(M, Union[list, tuple]) and len(M) == 2:
-                items["fb/M"] = M[0].detach().mean()
-                items["fb/M_F"] = items['F'][0].detach().mean()
+                metrics["fb/M"] = M[0].detach().mean()
+                metrics["fb/M_F"] = items['F'][0].detach().mean()
             else:
-                items["fb/M"] = M[0].detach().mean()
-                items["fb/M_F"] = items['F'][0].detach().mean()
+                metrics["fb/M"] = M[0].detach().mean()
+                metrics["fb/M_F"] = items['F'][0].detach().mean()
 
-        return fb_loss, items
+        return fb_loss, metrics
 
     def _calcute_q_loss(self, inputs, items, next_items: torch.Tensor, discount: Union[float, torch.Tensor]):
         with torch.no_grad():
@@ -253,13 +253,14 @@ class FBUpdater(updaters.Updater):
                 q_loss = 0.5 * F.mse_loss(Q, target_Q)
 
         with torch.no_grad():
-            items = {
+            metrics = {
                 "fb/q_reward": implicit_reward.mean().detach(),
                 "fb/q_target": target_Q.mean().detach(),
                 "fb/q": Q.mean().detach(),
+                "fb/q_diff": torch.abs(Q - target_Q).mean().detach(),
                 "fb/q_loss": q_loss.detach()
             }
-        return q_loss, items
+        return q_loss, metrics
 
     def _calcute_orth_loss(self, items: dict):
         """计算正交性损失
@@ -293,14 +294,14 @@ class FBUpdater(updaters.Updater):
         orth_loss = orth_loss_offdiag - orth_loss_diag
 
         with torch.no_grad():
-            items = {
+            metrics = {
                 "fb/B_mean": B.detach().mean(),
                 # "fb/B_norm": torch.norm(B.detach(), dim=-1).mean(),
                 "fb/B_orth_loss": orth_loss.detach(),
                 "fb/B_orth_diag": orth_loss_diag.detach(),
                 "fb/B_orth_offdiag": orth_loss_offdiag.detach(),
             }
-        return orth_loss, items
+        return orth_loss, metrics
 
 
     def _calcute_loss(self, inputs: dict, step: int) -> dict:

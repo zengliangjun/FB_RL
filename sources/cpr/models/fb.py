@@ -71,7 +71,7 @@ class FBCalcute(models.BaseModelCalcute):
                                   reward: torch.Tensor,
                                   inference_batch_size: int = 500_000) -> torch.Tensor:
 
-        state = self.state_prepose(state)
+        # state = self.state_prepose(state)
 
         return self.reward_inference(state = state,
                                      reward = reward,
