@@ -88,7 +88,7 @@ class RewardCriticUpdater(updaters.Updater):
             and self.config.clip_grad_norm > 0:
 
             torch.nn.utils.clip_grad_norm_(
-                self.model.critic.parameters(), self.config.clip_grad_norm
+                self.model.reward_critic.parameters(), self.config.clip_grad_norm
             )
 
         self.optim.step()
