@@ -151,7 +151,7 @@ class FBUpdater(updaters.Updater):
         return items
 
 
-    def _calcute_fb_loss(self, M: torch.Tensor, next_M: torch.Tensor, discount: Union[float, torch.Tensor]):
+    def _calcute_fb_loss(self, items: dict, next_items: dict, discount: Union[float, torch.Tensor]):
         """计算前向-后向损失
 
         计算后继度量矩阵的损失，包括非对角线损失和对角线损失。
@@ -165,6 +165,10 @@ class FBUpdater(updaters.Updater):
             fb_loss: 前向-后向损失值
             metrics: 损失指标字典
         """
+        M = items['M']
+        next_M = next_items['M']
+
+
         # 延迟初始化非对角线掩码
         if self.off_diag is None:
             I = torch.eye(*next_M.size(), device=next_M.device)  # 单位矩阵
@@ -206,10 +210,19 @@ class FBUpdater(updaters.Updater):
 
         with torch.no_grad():
             items = {
-                    "fb/fb_diag": fb_diag.detach(),
-                    "fb/fb_offdiag": fb_offdiag.detach(),
-                    "fb/fb_loss": fb_loss.detach()
+                    "fb/M_diag": fb_diag.detach(),
+                    "fb/M_offdiag": fb_offdiag.detach(),
+                    "fb/M_loss": fb_loss.detach()
                     }
+
+            items["fb/M_target"] = next_items['M'].detach().mean()
+            if isinstance(M, Union[list, tuple]) and len(M) == 2:
+                items["fb/M"] = M[0].detach().mean()
+                items["fb/M_F"] = items['F'][0].detach().mean()
+            else:
+                items["fb/M"] = M[0].detach().mean()
+                items["fb/M_F"] = items['F'][0].detach().mean()
+
         return fb_loss, items
 
     def _calcute_q_loss(self, inputs, items, next_items: torch.Tensor, discount: Union[float, torch.Tensor]):
@@ -241,14 +254,14 @@ class FBUpdater(updaters.Updater):
 
         with torch.no_grad():
             items = {
-                "fb/reward": implicit_reward.mean().detach(),
-                "fb/target_Q": target_Q.mean().detach(),
-                "fb/Q": Q.mean().detach(),
+                "fb/q_reward": implicit_reward.mean().detach(),
+                "fb/q_target": target_Q.mean().detach(),
+                "fb/q": Q.mean().detach(),
                 "fb/q_loss": q_loss.detach()
             }
         return q_loss, items
 
-    def _calcute_orth_loss(self, B: torch.Tensor):
+    def _calcute_orth_loss(self, items: dict):
         """计算正交性损失
 
         计算后向表示的正交性损失，确保技能向量的正交性。
@@ -260,6 +273,7 @@ class FBUpdater(updaters.Updater):
             orth_loss: 正交性损失
             metrics: 损失指标字典
         """
+        B: torch.Tensor = items['B']
         # 延迟初始化非对角线掩码
         if self.off_diag is None:
             I = torch.eye((B.shape[0], B.shape[0]), device=B.device)  # 单位矩阵
@@ -270,20 +284,21 @@ class FBUpdater(updaters.Updater):
         Cov = torch.matmul(B, B.T)  # batch_size x batch_size
 
         # 对角线损失：协方差矩阵的对角线元素应该最大化（表示技能向量的强度）
-        orth_loss_diag = - Cov.diag().mean()
+        orth_loss_diag = Cov.diag().mean()
 
         # 非对角线损失：协方差矩阵的非对角线元素应该最小化（表示技能向量的正交性）
         orth_loss_offdiag = 0.5 * Cov[self.off_diag].pow(2).mean()
 
         # 总正交性损失
-        orth_loss = orth_loss_offdiag + orth_loss_diag
+        orth_loss = orth_loss_offdiag - orth_loss_diag
 
         with torch.no_grad():
             items = {
-                "fb/orth_loss": orth_loss.detach(),
-                "fb/orth_loss_diag": orth_loss_diag.detach(),
-                "fb/orth_loss_offdiag": orth_loss_offdiag.detach(),
-
+                "fb/B_mean": B.detach().mean(),
+                # "fb/B_norm": torch.norm(B.detach(), dim=-1).mean(),
+                "fb/B_orth_loss": orth_loss.detach(),
+                "fb/B_orth_diag": orth_loss_diag.detach(),
+                "fb/B_orth_offdiag": orth_loss_offdiag.detach(),
             }
         return orth_loss, items
 
@@ -298,7 +313,7 @@ class FBUpdater(updaters.Updater):
         items = self._calcute_curent(inputs, step)  # 当前状态相关量
 
         # FB损失：后继度量学习损失
-        fb_loss, metrics_items = self._calcute_fb_loss(items['M'], next_items['M'], discount)
+        fb_loss, metrics_items = self._calcute_fb_loss(items, next_items, discount)
         loss = fb_loss.clone()  # 总损失初始化为FB损失
         metrics.update(metrics_items)
 
@@ -309,24 +324,12 @@ class FBUpdater(updaters.Updater):
             metrics.update(metrics_items)
 
         # 后向表示的正交性损失
-        orth_loss, metrics_items = self._calcute_orth_loss(items['B'])
+        orth_loss, metrics_items = self._calcute_orth_loss(items)
         loss += self.config.ortho_coef * orth_loss  # 加权正交性损失
         metrics.update(metrics_items)
 
         with torch.no_grad():
-            metrics["fb/target_M"] = next_items['M'].detach().mean()
-            if isinstance(items['M'], Union[list, tuple]) and len(items['M']) == 2:
-                metrics["fb/M1"] = items['M'][0].detach().mean()
-                metrics["fb/F1"] = items['F'][0].detach().mean()
-            else:
-                metrics["fb/M1"] = items['M'][0].detach().mean()
-                metrics["fb/F1"] = items['F'][0].detach().mean()
-
-            metrics["fb/B"] = items['B'].detach().mean()
-            # metrics["fb/Q"] = items['Q'].detach().mean().item()
-
-            metrics["fb/B_norm"] = torch.norm(items['B'].detach(), dim=-1).mean()
-            metrics["fb/z_norm"] = torch.norm(inputs['z_policy'].detach(), dim=-1).mean()
+            # metrics["fb/z_norm"] = torch.norm(inputs['z_policy'].detach(), dim=-1).mean()
             ##
             metrics["fb/loss"] = loss.detach()
 
