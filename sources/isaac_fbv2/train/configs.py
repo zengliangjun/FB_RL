@@ -98,12 +98,12 @@ class StateVAEConfig(netv2_configs.StateVAEConfig):
 
 
 @dataclasses.dataclass
-class  ActorNetConfig(netv2_configs.ActorConfig):
+class  ActorNetConfig(net_configs.ResidualActorConfig):
     hidden_dimension: int = 1024
     embedding_layers: int = 4
     hidden_layers: int = 6
 
-    latent_dimension: int = 256
+    # latent_dimension: int = 256
 
     optim_lr: float = 3e-4
     optim_weight_decay: float = 0
@@ -152,12 +152,36 @@ class  FBModelConfig(models_configs.ModelConfig):
     net_critic: CriticConfig = CriticConfig()
     net_reward_critic: RewardCriticConfig = RewardCriticConfig()
 
-    net_actor_vae: StateVAEConfig = StateVAEConfig()
+    # net_actor_vae: StateVAEConfig = StateVAEConfig()
     net_actor: ActorNetConfig = ActorNetConfig()
 
     net_discriminator: DiscriminatorConfig = DiscriminatorConfig()
     net_backward_map: BackwardNetConfig = BackwardNetConfig()
 
+
+    def _init_network_names(self):
+        self._network_names_ = [
+            "net_critic_embed",
+
+            "net_forward_map",
+            "net_critic",
+            "net_reward_critic",
+
+            #"net_actor_vae",
+            "net_actor",
+
+            "net_discriminator",
+            "net_backward_map",
+        ]
+        self._target_network_names_ = [
+            "net_critic_embed",
+
+            "net_forward_map",
+            "net_critic",
+            "net_reward_critic",
+
+            "net_backward_map",
+        ]
 
 
 #### Updater
@@ -207,7 +231,7 @@ class  VAEUpdaterConfig(updaters_configs.VAEConfig):
 #### Agent
 @dataclasses.dataclass
 class FBAgentConfig(agents_configs.AgentConfig):
-    vae_updater: VAEUpdaterConfig = VAEUpdaterConfig()
+    # vae_updater: VAEUpdaterConfig = VAEUpdaterConfig()
     fb_updater: FBUpdaterConfig = FBUpdaterConfig()
     actor_updater: ActorUpdaterConfig = ActorUpdaterConfig()
     critic_updater: CriticUpdaterConfig = CriticUpdaterConfig()
@@ -226,6 +250,16 @@ class FBAgentConfig(agents_configs.AgentConfig):
 
     seq_length: int = 8
 
+
+    def __post_init__(self):
+        super().__post_init__()
+        self._updater_names_ =  [
+                                 #"vae_updater",
+                                 "fb_updater",
+                                 "actor_updater",
+                                 "critic_updater",
+                                 "reward_critic_updater",
+                                 "discriminator_updater"]
 
 #### buffer
 @dataclasses.dataclass

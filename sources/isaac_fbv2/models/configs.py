@@ -57,14 +57,20 @@ class  ModelConfig(models.BaseModelConfig):
             setattr(cfg, "state_dimension", critic_embed_cfg.out_dimension)
             cfg.__post_init__()
 
-        actor_vae_cfg: networks.BaseNetConfig = getattr(self, "net_actor_vae")
-        setattr(actor_vae_cfg, "state_dimension", self.history_horizon * self.state_dimension)
-        setattr(actor_vae_cfg, "out_dimension", self.privileges_dimension)
-        actor_vae_cfg.__post_init__()
+        if hasattr(self, "net_actor_vae"):
+            actor_vae_cfg: networks.BaseNetConfig = getattr(self, "net_actor_vae")
+            setattr(actor_vae_cfg, "state_dimension", self.history_horizon * self.state_dimension)
+            setattr(actor_vae_cfg, "out_dimension", self.privileges_dimension)
+            actor_vae_cfg.__post_init__()
 
-        actor_cfg: networks.BaseNetConfig = getattr(self, "net_actor")
-        setattr(actor_cfg, "state_dimension", actor_vae_cfg.latent_dimension)
-        actor_cfg.__post_init__()
+            actor_cfg: networks.BaseNetConfig = getattr(self, "net_actor")
+            setattr(actor_cfg, "state_dimension", actor_vae_cfg.latent_dimension)
+            actor_cfg.__post_init__()
+        else:
+            actor_cfg: networks.BaseNetConfig = getattr(self, "net_actor")
+            setattr(actor_cfg, "state_dimension", self.history_horizon * self.state_dimension)
+            actor_cfg.__post_init__()
+
 
         for name in ["net_backward_map", "net_discriminator"]:
             cfg: networks.BaseNetConfig = getattr(self, name)
