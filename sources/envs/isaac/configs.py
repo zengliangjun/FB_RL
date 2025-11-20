@@ -13,5 +13,7 @@ from base_envs import envs
 class IsaacConfig(envs.BaseEnvConfig):
     _target_: str = "envs.isaac.env:IsaacWarp"
 
+    name: str = "isaac_g1"
+
     workdir: Optional[str] = None
     args_cli: Optional[Any] = None
