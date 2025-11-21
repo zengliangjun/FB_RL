@@ -22,3 +22,16 @@ class ActorConfig(updaters.BaseUpdaterConfig):
     pessimism_penalty: float = 0.5
     clip_grad_norm: float = 0
 
+
+@dataclasses.dataclass
+class FBConservativeConfig(FBConfig):
+    _target_: str = "cpr.updaters.conservativefb:FBUpdater"  # 目标类路径
+
+    conservative_total_action_samples: int = 12
+    conservative_ood_action_weight: float = 0.25  # should be multiple of 0.25
+    conservative_alpha: float = 0.01
+    conservative_target_conservative_penalty: float = 50.0
+    conservative_critic_learning_rate: float = 1e-4
+
+    if_measure_conservative_penalty: bool = True
+    if_value_conservative_penalty: bool = True
