@@ -22,6 +22,11 @@ class SimpleForwardMapConfig(networks.FConfig):
 class ResidualForwardMapConfig(SimpleForwardMapConfig):
     _target_: str = "cpr.networks.residual:ResidualForwardMap"  # 目标类路径
 
+@dataclasses.dataclass
+class BreezeForwardMapConfig(SimpleForwardMapConfig):
+    _target_: str = "cpr.networks.breezes:Critic"  # 目标类路径
+
+    embedding_simple: bool = True
 
 @dataclasses.dataclass
 class SimpleBackwardMapConfig(networks.BConfig):
@@ -35,6 +40,14 @@ class SimpleBackwardMapConfig(networks.BConfig):
 
     target_tau: float = 0.01
 
+
+@dataclasses.dataclass
+class BreezeBackwardMapConfig(SimpleBackwardMapConfig):
+    _target_: str = "cpr.networks.breezes:Backward"  # 目标类路径
+
+    d_model: int = 256
+    nhead: int = 8
+    dropout: float = 0.1
 
 @dataclasses.dataclass
 class SimpleActorConfig(networks.ActorConfig):
@@ -69,8 +82,6 @@ class ResidualCriticConfig(ResidualForwardMapConfig):
         super(ResidualCriticConfig, self).__post_init__()
         self.out_dimension = 1
 
-
-
 @dataclasses.dataclass
 class SimpleDiscriminatorConfig(networks.DiscriminatorConfig):
     _target_: str = "cpr.networks.simple:Discriminator"  # 目标类路径
@@ -80,3 +91,16 @@ class SimpleDiscriminatorConfig(networks.DiscriminatorConfig):
 
     optim_lr: float = 1e-4  # 网络的学习率
     optim_weight_decay: float = 0
+
+@dataclasses.dataclass
+class ResidualDiscriminatorConfig(SimpleDiscriminatorConfig):
+    _target_: str = "cpr.networks.residual:ResidualActor"  # 目标类路径
+
+
+@dataclasses.dataclass
+class SimpleVConfig(SimpleDiscriminatorConfig):
+    pass
+
+@dataclasses.dataclass
+class ResidualVConfig(ResidualDiscriminatorConfig):
+    pass

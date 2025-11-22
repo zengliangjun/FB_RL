@@ -396,6 +396,67 @@ class Block(nn.Module):
         """
         return self.mlp(x)
 
+
+class RMSNorm(nn.Module):
+    def __init__(self, dim: int, affine: bool = True):
+        super().__init__()
+        self.scale = dim ** 0.5
+        self.gamma = nn.Parameter(torch.ones(dim)) if affine else 1.
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return F.normalize(x, dim = -1) * self.gamma * self.scale
+
+class SelfAttention(nn.Module):
+    def __init__(self, z_dim: int):
+        super(SelfAttention, self).__init__()
+        self.query = nn.Linear(z_dim, z_dim)
+        self.key = nn.Linear(z_dim, z_dim)
+        self.value = nn.Linear(z_dim, z_dim)
+        self.z_dim = z_dim
+        self.apply(weight_init)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        Q = self.query(x)
+        K = self.key(x)
+        V = self.value(x)
+
+        attention_scores = torch.bmm(Q, K.transpose(1, 2)) / (self.z_dim ** 0.5)
+        attention_weights = F.softmax(attention_scores, dim=-1)
+        output = torch.bmm(attention_weights, V)
+        return output
+
+class FeedForward(nn.Module):
+    def __init__(self, dim: int, expansion: int = 4, dropout: float = 0.1):
+
+        super().__init__()
+
+        inner_dim = dim * expansion
+        self.net = nn.Sequential(
+            nn.Linear(dim, inner_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(inner_dim, dim),
+            nn.Dropout(dropout)
+        )
+        self.norm = RMSNorm(dim)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(self.norm(x))
+
+class BreezeBlock(nn.Module):
+    def __init__(self, dim: int, dropout: float = 0.1):
+        super().__init__()
+
+        self.feedforward = FeedForward(dim)
+        self.self_attention = SelfAttention(dim)
+        self.norm = nn.LayerNorm(dim)
+        self.dropout = nn.Dropout(p=dropout)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        attention = self.self_attention(x)
+        residual = attention + self.feedforward(attention)
+        return self.norm(self.dropout(residual))
+
 def residual_embedding(input_dim, hidden_dim, hidden_layers, num_parallel=1):
     """残差嵌入网络构建函数
 
